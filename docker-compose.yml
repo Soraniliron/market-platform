@@ -4,4 +4,6 @@ services:
     container_name: market-platform
     ports:
       - "8000:8000"
+    environment:
+      APP_MODE: mock
       
