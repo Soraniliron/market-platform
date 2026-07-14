@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from config.settings import APP_MODE
-from mock_engine.provider import get_market_data
+from providers.market_provider import get_signal
 
 app = FastAPI()
 
@@ -15,5 +15,5 @@ def health():
 
 @app.get("/signal")
 def signal():
-    return get_market_data()
+    return get_signal()
     
