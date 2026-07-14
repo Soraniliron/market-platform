@@ -6,6 +6,10 @@ services:
       - "8000:8000"
     environment:
       APP_MODE: mock
+      DB_HOST: db
+      DB_NAME: market_db
+      DB_USER: market_user
+      DB_PASSWORD: market_password
 
   db:
     image: postgres:16
