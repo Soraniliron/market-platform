@@ -25,4 +25,22 @@ def save_signal(ticker, price, signal):
     connection.commit()
     cursor.close()
     connection.close()
+
+
+def get_signals():
+    connection = get_connection()
+    cursor = connection.cursor()
+
+    cursor.execute("""
+        SELECT id, ticker, price, signal
+        FROM signals
+        ORDER BY id DESC
+    """)
+
+    rows = cursor.fetchall()
+
+    cursor.close()
+    connection.close()
+
+    return rows
     

@@ -1,7 +1,11 @@
 from fastapi import FastAPI
 from config.settings import APP_MODE
 from providers.market_provider import get_signal
-from database.connection import get_connection, save_signal
+from database.connection import (
+    get_connection,
+    save_signal,
+    get_signals,
+)
 
 app = FastAPI()
 
@@ -27,6 +31,21 @@ def signal():
     return data
 
 
+@app.get("/signals")
+def signals():
+    rows = get_signals()
+
+    return [
+        {
+            "id": row[0],
+            "ticker": row[1],
+            "price": row[2],
+            "signal": row[3],
+        }
+        for row in rows
+    ]
+
+
 @app.get("/db-check")
 def db_check():
     connection = get_connection()
@@ -41,4 +60,6 @@ def db_check():
         "result": result[0]
     }
     
+
+
     
