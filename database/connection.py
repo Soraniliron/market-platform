@@ -10,16 +10,37 @@ def get_connection():
     )
 
 
-def save_signal(ticker, price, signal):
+def save_signal(
+    ticker,
+    entry_price,
+    stop_price,
+    tp1_price,
+    tp2_price,
+    signal,
+):
     connection = get_connection()
     cursor = connection.cursor()
 
     cursor.execute(
         """
-        INSERT INTO signals (ticker, price, signal)
-        VALUES (%s, %s, %s)
+        INSERT INTO signals (
+            ticker,
+            entry_price,
+            stop_price,
+            tp1_price,
+            tp2_price,
+            signal
+        )
+        VALUES (%s, %s, %s, %s, %s, %s)
         """,
-        (ticker, price, signal),
+        (
+            ticker,
+            entry_price,
+            stop_price,
+            tp1_price,
+            tp2_price,
+            signal,
+        ),
     )
 
     connection.commit()
@@ -32,7 +53,15 @@ def get_signals():
     cursor = connection.cursor()
 
     cursor.execute("""
-        SELECT id, ticker, price, signal
+        SELECT
+            id,
+            ticker,
+            entry_price,
+            stop_price,
+            tp1_price,
+            tp2_price,
+            signal,
+            created_at
         FROM signals
         ORDER BY id DESC
     """)
@@ -44,3 +73,4 @@ def get_signals():
 
     return rows
     
+

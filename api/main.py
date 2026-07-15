@@ -14,7 +14,7 @@ app = FastAPI()
 def health():
     return {
         "status": "ok",
-        "mode": APP_MODE
+        "mode": APP_MODE,
     }
 
 
@@ -24,8 +24,11 @@ def signal():
 
     save_signal(
         data["ticker"],
-        data["price"],
-        data["signal"]
+        data["entry_price"],
+        data["stop_price"],
+        data["tp1_price"],
+        data["tp2_price"],
+        data["signal"],
     )
 
     return data
@@ -39,8 +42,12 @@ def signals():
         {
             "id": row[0],
             "ticker": row[1],
-            "price": row[2],
-            "signal": row[3],
+            "entry_price": row[2],
+            "stop_price": row[3],
+            "tp1_price": row[4],
+            "tp2_price": row[5],
+            "signal": row[6],
+            "created_at": str(row[7]),
         }
         for row in rows
     ]
@@ -50,16 +57,19 @@ def signals():
 def db_check():
     connection = get_connection()
     cursor = connection.cursor()
+
     cursor.execute("SELECT 1;")
     result = cursor.fetchone()
+
     cursor.close()
     connection.close()
 
     return {
         "database": "ok",
-        "result": result[0]
+        "result": result[0],
     }
     
+
 
 
     
