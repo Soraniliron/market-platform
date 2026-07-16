@@ -1,17 +1,21 @@
 from fastapi import FastAPI
+
 from config.settings import APP_MODE
-from providers.market_provider import get_signal
 from database.connection import (
     get_connection,
-    save_signal,
     get_signals,
+    save_signal,
 )
+from logs.logger import logger
+from providers.market_provider import get_signal
 
 app = FastAPI()
 
 
 @app.get("/health")
 def health():
+    logger.info("Health endpoint called")
+
     return {
         "status": "ok",
         "mode": APP_MODE,
@@ -20,6 +24,8 @@ def health():
 
 @app.get("/signal")
 def signal():
+    logger.info("Generating new signal")
+
     data = get_signal()
 
     save_signal(
@@ -31,11 +37,15 @@ def signal():
         data["signal"],
     )
 
+    logger.info("Signal saved for %s", data["ticker"])
+
     return data
 
 
 @app.get("/signals")
 def signals():
+    logger.info("Reading all signals")
+
     rows = get_signals()
 
     return [
@@ -55,6 +65,8 @@ def signals():
 
 @app.get("/db-check")
 def db_check():
+    logger.info("Database health check")
+
     connection = get_connection()
     cursor = connection.cursor()
 
