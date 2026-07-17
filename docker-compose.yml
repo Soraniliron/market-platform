@@ -4,6 +4,7 @@ services:
     container_name: market-platform
     ports:
       - "8000:8000"
+
     environment:
       APP_MODE: mock
       DB_HOST: db
@@ -11,13 +12,19 @@ services:
       DB_USER: market_user
       DB_PASSWORD: market_password
 
+    volumes:
+      - ./logs:/app/logs
+
   db:
     image: postgres:16
     container_name: market-postgres
+
     environment:
       POSTGRES_USER: market_user
       POSTGRES_PASSWORD: market_password
       POSTGRES_DB: market_db
+
     ports:
       - "5432:5432"
+      
       
