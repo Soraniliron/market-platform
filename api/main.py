@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from apscheduler.schedulers.background import BackgroundScheduler
 
 from config.settings import APP_MODE
 from database.connection import (
@@ -8,8 +9,31 @@ from database.connection import (
 )
 from logs.logger import logger
 from providers.market_provider import get_signal
+from scheduler.jobs import scheduled_test_job
 
 app = FastAPI()
+
+job_scheduler = BackgroundScheduler()
+
+
+@app.on_event("startup")
+def start_scheduler():
+    job_scheduler.add_job(
+        scheduled_test_job,
+        "interval",
+        seconds=30,
+        id="scheduled_test_job",
+        replace_existing=True,
+    )
+
+    job_scheduler.start()
+    logger.info("Scheduler started")
+
+
+@app.on_event("shutdown")
+def stop_scheduler():
+    job_scheduler.shutdown()
+    logger.info("Scheduler stopped")
 
 
 @app.get("/health")
@@ -80,8 +104,4 @@ def db_check():
         "database": "ok",
         "result": result[0],
     }
-    
-
-
-
     
