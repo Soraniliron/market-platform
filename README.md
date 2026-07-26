@@ -1,44 +1,89 @@
-# Market Platform
+# IDB PRIME
+
+A modular financial data platform built with Python, FastAPI, PostgreSQL and Docker.
+
+> **Status:** Active Development 🚧
+
+---
 
 ## Overview
 
-Market Platform is a cloud-ready trading platform built as a DevOps portfolio project.
+IDB PRIME is a modular backend platform designed to collect, store and process financial market data.
 
-The project demonstrates:
+The project focuses on building a production-ready architecture that will support historical data collection, market analysis, investment research and future automation.
 
-- Docker
-- GitHub
-- CI/CD
-- AWS Deployment
-- Monitoring
-- Logging
-- Infrastructure as Code
+---
 
-The trading algorithm itself is private and is not included in the public repository.
+## Current Features
+
+- Python 3
+- FastAPI REST API
+- PostgreSQL Database
+- Docker & Docker Compose
+- Background Scheduler
+- Structured Logging
+- Polygon.io Integration
+- Historical Data Import (In Progress)
+- Modular Project Architecture
+
+---
+
+## Tech Stack
+
+| Technology | Purpose |
+|------------|---------|
+| Python | Backend |
+| FastAPI | REST API |
+| PostgreSQL | Database |
+| Docker | Containerization |
+| Docker Compose | Local Infrastructure |
+| Polygon.io | Market Data Provider |
+| Git & GitHub | Version Control |
 
 ---
 
 ## Project Structure
 
-```
-api/
-dashboard/
-config/
-docker/
-docs/
-mock_engine/
-scripts/
-tests/
+```text
+market-platform/
+│
+├── api/
+├── config/
+├── database/
+├── docker/
+├── importer/
+├── logs/
+├── providers/
+├── scheduler/
+├── scripts/
+└── README.md
 ```
 
 ---
 
-## Current Status
+## Roadmap
 
-✅ Project Initialized
+- [x] Docker Environment
+- [x] FastAPI
+- [x] PostgreSQL
+- [x] Scheduler
+- [x] Logging
+- [x] Polygon Integration
+- [ ] Historical Import Engine
+- [ ] Analytics Engine
+- [ ] Automated Signals
+- [ ] Dashboard
 
 ---
 
-## Author
+## Project Status
 
-Liron Sorani
+This project is currently under active development.
+
+New features and improvements are added continuously.
+
+---
+
+## License
+
+Private Project
