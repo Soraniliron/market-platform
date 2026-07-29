@@ -1,5 +1,11 @@
 # IDB PRIME
 
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-336791)
+![Docker](https://img.shields.io/badge/Docker-Compose-2496ED)
+![Status](https://img.shields.io/badge/Status-Active%20Development-orange)
+
 A modular financial data platform built with Python, FastAPI, PostgreSQL and Docker.
 
 > **Status:** Active Development 🚧

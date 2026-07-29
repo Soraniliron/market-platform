@@ -2,11 +2,8 @@ from fastapi import FastAPI
 from apscheduler.schedulers.background import BackgroundScheduler
 
 from config.settings import APP_MODE
-from database.connection import (
-    get_connection,
-    get_signals,
-    save_signal,
-)
+from database.connection import get_connection
+from database.signal_repository import get_signals, save_signal
 from logs.logger import logger
 from providers.market_provider import get_signal
 from scheduler.jobs import scheduled_test_job
