@@ -16,6 +16,7 @@ class ScanStatus(str, Enum):
 class MarketSnapshot:
     ticker: str
     price: float
+    open_price: float
     previous_close: float
     change_percent: float
     volume: float

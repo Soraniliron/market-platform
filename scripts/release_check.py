@@ -1,4 +1,7 @@
+from __future__ import annotations
+
 import compileall
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -13,9 +16,29 @@ def run_command(
 ) -> bool:
     print(f"\n=== {title} ===")
 
+    environment = os.environ.copy()
+
+    existing_pythonpath = environment.get(
+        "PYTHONPATH",
+        "",
+    )
+
+    project_root_text = str(PROJECT_ROOT)
+
+    environment["PYTHONPATH"] = (
+        project_root_text
+        if not existing_pythonpath
+        else (
+            f"{project_root_text}"
+            f"{os.pathsep}"
+            f"{existing_pythonpath}"
+        )
+    )
+
     result = subprocess.run(
         command,
         cwd=PROJECT_ROOT,
+        env=environment,
         check=False,
     )
 
@@ -31,9 +54,16 @@ def check_compilation() -> bool:
     print("\n=== Python Compilation Check ===")
 
     directories = [
+        PROJECT_ROOT / "api",
+        PROJECT_ROOT / "config",
+        PROJECT_ROOT / "database",
         PROJECT_ROOT / "earnings",
         PROJECT_ROOT / "engines",
-        PROJECT_ROOT / "database",
+        PROJECT_ROOT / "importer",
+        PROJECT_ROOT / "providers",
+        PROJECT_ROOT / "scanner",
+        PROJECT_ROOT / "scheduler",
+        PROJECT_ROOT / "scripts",
         PROJECT_ROOT / "tests",
     ]
 
@@ -73,6 +103,12 @@ def check_compilation() -> bool:
 def check_core_imports() -> bool:
     print("\n=== Core Import Check ===")
 
+    if str(PROJECT_ROOT) not in sys.path:
+        sys.path.insert(
+            0,
+            str(PROJECT_ROOT),
+        )
+
     try:
         from earnings.audit_engine import (
             create_audit_record,
@@ -95,6 +131,26 @@ def check_core_imports() -> bool:
         from earnings.validation_engine import (
             validate_analysis_input,
         )
+        from engines.base_engine import (
+            BaseEngine,
+            EngineResult,
+        )
+        from engines.gap_engine import (
+            GapEngine,
+        )
+        from engines.volume_engine import (
+            VolumeEngine,
+        )
+        from providers.market_provider import (
+            MarketProvider,
+        )
+        from scanner.context import (
+            MarketContext,
+            VolumeContext,
+        )
+        from scanner.scanner_engine import (
+            MarketScanner,
+        )
 
         required_objects = [
             create_audit_record,
@@ -104,6 +160,14 @@ def check_core_imports() -> bool:
             replay_audit_record,
             build_report,
             validate_analysis_input,
+            BaseEngine,
+            EngineResult,
+            GapEngine,
+            VolumeEngine,
+            MarketProvider,
+            MarketContext,
+            VolumeContext,
+            MarketScanner,
         ]
 
         if any(
@@ -135,6 +199,7 @@ def main() -> int:
                 sys.executable,
                 "-m",
                 "pytest",
+                "-q",
             ],
             "Full Test Suite",
         ),
@@ -154,3 +219,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+    
