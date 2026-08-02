@@ -5,6 +5,7 @@ from datetime import date
 import pytest
 
 from scanner.context import (
+    IndexContext,
     MarketContext,
     VolumeContext,
 )
@@ -47,7 +48,12 @@ def build_strong_context() -> MarketContext:
             current_volume=500_000,
             average_volume_same_window=250_000,
             previous_window_volume=300_000,
-        )
+        ),
+        index=IndexContext(
+            market_trend=2,
+            spy_above_vwap=True,
+            qqq_above_vwap=True,
+        ),
     )
 
 
@@ -57,7 +63,12 @@ def build_weak_context() -> MarketContext:
             current_volume=200_000,
             average_volume_same_window=500_000,
             previous_window_volume=400_000,
-        )
+        ),
+        index=IndexContext(
+            market_trend=-2,
+            spy_above_vwap=False,
+            qqq_above_vwap=False,
+        ),
     )
 
 
@@ -99,11 +110,14 @@ def test_scan_ticker_returns_strong_result() -> None:
 
     assert result.ticker == "META"
     assert result.status == ScanStatus.STRONG
-    assert result.score == 95.0
+    assert result.score == 86.0
     assert result.change_percent == 3.0
     assert result.above_vwap is True
     assert "gap:" in result.reason
     assert "volume:" in result.reason
+    assert "index:" in result.reason
+    assert "vwap:" in result.reason
+    assert "chart_quality:" in result.reason
 
 
 def test_scan_ticker_returns_weak_result() -> None:
@@ -143,7 +157,7 @@ def test_scan_ticker_returns_weak_result() -> None:
     )
 
     assert result.status == ScanStatus.WEAK
-    assert result.score == 15.0
+    assert result.score == 16.0
     assert result.change_percent == -3.0
     assert result.above_vwap is False
 
@@ -198,7 +212,12 @@ def test_scan_home_list_sorts_by_score_descending() -> None:
                 current_volume=250_000,
                 average_volume_same_window=250_000,
                 previous_window_volume=250_000,
-            )
+            ),
+            index=IndexContext(
+                market_trend=0,
+                spy_above_vwap=True,
+                qqq_above_vwap=True,
+            ),
         ),
     }
 
@@ -330,7 +349,7 @@ def test_scan_ticker_without_volume_context() -> None:
         end_date=date(2026, 7, 30),
     )
 
-    assert result.score == 62.5
+    assert result.score == 64.0
     assert result.status == ScanStatus.NEUTRAL
     assert (
         "Volume context unavailable"

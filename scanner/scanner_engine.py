@@ -8,8 +8,13 @@ from engines.base_engine import (
     BaseEngine,
     EngineResult,
 )
+from engines.chart_quality_engine import (
+    ChartQualityEngine,
+)
 from engines.gap_engine import GapEngine
+from engines.index_engine import IndexEngine
 from engines.volume_engine import VolumeEngine
+from engines.vwap_engine import VWAPEngine
 from providers.market_provider import MarketProvider
 from scanner.context import MarketContext
 from scanner.models import (
@@ -27,7 +32,9 @@ class MarketScanner:
         engines: list[BaseEngine] | None = None,
     ) -> None:
         self.provider = provider or MarketProvider()
-        self.home_list = list(home_list or HOME_LIST)
+        self.home_list = list(
+            home_list or HOME_LIST
+        )
 
         self.engines = (
             engines
@@ -35,6 +42,9 @@ class MarketScanner:
             else [
                 GapEngine(),
                 VolumeEngine(),
+                IndexEngine(),
+                VWAPEngine(),
+                ChartQualityEngine(),
             ]
         )
 
@@ -48,7 +58,9 @@ class MarketScanner:
     ) -> ScanResult:
         bars = self.provider.get_bars(
             ticker=ticker,
-            timeframe_minutes=timeframe_minutes,
+            timeframe_minutes=(
+                timeframe_minutes
+            ),
             start_date=start_date,
             end_date=end_date,
         )
@@ -61,9 +73,13 @@ class MarketScanner:
 
         snapshot = self._build_snapshot(
             ticker=ticker,
-            timeframe_minutes=timeframe_minutes,
+            timeframe_minutes=(
+                timeframe_minutes
+            ),
             bars=bars,
-            previous_close_data=previous_close_data,
+            previous_close_data=(
+                previous_close_data
+            ),
         )
 
         return self._classify(
@@ -76,7 +92,10 @@ class MarketScanner:
         timeframe_minutes: int,
         start_date: date | datetime,
         end_date: date | datetime,
-        contexts: dict[str, MarketContext] | None = None,
+        contexts: (
+            dict[str, MarketContext]
+            | None
+        ) = None,
     ) -> list[ScanResult]:
         results: list[ScanResult] = []
 
@@ -88,16 +107,22 @@ class MarketScanner:
         }
 
         for ticker in self.home_list:
-            normalized_ticker = ticker.upper()
+            normalized_ticker = (
+                ticker.upper()
+            )
 
             try:
                 result = self.scan_ticker(
                     ticker=normalized_ticker,
-                    timeframe_minutes=timeframe_minutes,
+                    timeframe_minutes=(
+                        timeframe_minutes
+                    ),
                     start_date=start_date,
                     end_date=end_date,
-                    context=normalized_contexts.get(
-                        normalized_ticker
+                    context=(
+                        normalized_contexts.get(
+                            normalized_ticker
+                        )
                     ),
                 )
             except (
@@ -108,7 +133,9 @@ class MarketScanner:
             ):
                 result = ScanResult(
                     ticker=normalized_ticker,
-                    status=ScanStatus.REJECTED,
+                    status=(
+                        ScanStatus.REJECTED
+                    ),
                     score=0.0,
                     price=0.0,
                     change_percent=0.0,
@@ -138,7 +165,8 @@ class MarketScanner:
     ) -> MarketSnapshot:
         if not bars:
             raise ValueError(
-                f"No bars returned for {ticker}"
+                f"No bars returned for "
+                f"{ticker}"
             )
 
         if not previous_close_data:
@@ -148,12 +176,19 @@ class MarketScanner:
             )
 
         latest_bar = bars[-1]
+
         previous_close_row = (
             previous_close_data[0]
         )
 
-        price = float(latest_bar["c"])
-        open_price = float(latest_bar["o"])
+        price = float(
+            latest_bar["c"]
+        )
+
+        open_price = float(
+            latest_bar["o"]
+        )
+
         previous_close = float(
             previous_close_row["c"]
         )
@@ -165,7 +200,8 @@ class MarketScanner:
 
         if open_price <= 0:
             raise ValueError(
-                f"Invalid open price for {ticker}"
+                f"Invalid open price for "
+                f"{ticker}"
             )
 
         if previous_close <= 0:
@@ -174,25 +210,57 @@ class MarketScanner:
                 f"for {ticker}"
             )
 
-        high = float(latest_bar["h"])
-        low = float(latest_bar["l"])
+        high = float(
+            latest_bar["h"]
+        )
+
+        low = float(
+            latest_bar["l"]
+        )
 
         if high <= 0 or low <= 0:
             raise ValueError(
-                f"Invalid price range for {ticker}"
+                f"Invalid price range for "
+                f"{ticker}"
             )
 
         if low > high:
             raise ValueError(
-                f"Low exceeds high for {ticker}"
+                f"Low exceeds high for "
+                f"{ticker}"
+            )
+
+        if not (
+            low
+            <= price
+            <= high
+        ):
+            raise ValueError(
+                f"Close outside price range "
+                f"for {ticker}"
+            )
+
+        if not (
+            low
+            <= open_price
+            <= high
+        ):
+            raise ValueError(
+                f"Open outside price range "
+                f"for {ticker}"
             )
 
         change_percent = (
-            (price - previous_close)
+            (
+                price
+                - previous_close
+            )
             / previous_close
         ) * 100
 
-        raw_vwap = latest_bar.get("vw")
+        raw_vwap = (
+            latest_bar.get("vw")
+        )
 
         vwap = (
             float(raw_vwap)
@@ -204,15 +272,24 @@ class MarketScanner:
             ticker=ticker.upper(),
             price=price,
             open_price=open_price,
-            previous_close=previous_close,
-            change_percent=change_percent,
+            previous_close=(
+                previous_close
+            ),
+            change_percent=(
+                change_percent
+            ),
             volume=float(
-                latest_bar.get("v", 0.0)
+                latest_bar.get(
+                    "v",
+                    0.0,
+                )
             ),
             vwap=vwap,
             high=high,
             low=low,
-            timeframe_minutes=timeframe_minutes,
+            timeframe_minutes=(
+                timeframe_minutes
+            ),
         )
 
     def _evaluate_engines(
@@ -237,9 +314,11 @@ class MarketScanner:
         snapshot: MarketSnapshot,
         context: MarketContext | None = None,
     ) -> ScanResult:
-        engine_results = self._evaluate_engines(
-            snapshot=snapshot,
-            context=context,
+        engine_results = (
+            self._evaluate_engines(
+                snapshot=snapshot,
+                context=context,
+            )
         )
 
         score = (
@@ -258,19 +337,31 @@ class MarketScanner:
         )
 
         above_vwap = (
-            snapshot.price >= snapshot.vwap
-            if snapshot.vwap is not None
+            (
+                snapshot.price
+                >= snapshot.vwap
+            )
+            if snapshot.vwap
+            is not None
             else None
         )
 
         if score >= 80.0:
-            status = ScanStatus.STRONG
+            status = (
+                ScanStatus.STRONG
+            )
         elif score >= 65.0:
-            status = ScanStatus.POSITIVE
+            status = (
+                ScanStatus.POSITIVE
+            )
         elif score >= 40.0:
-            status = ScanStatus.NEUTRAL
+            status = (
+                ScanStatus.NEUTRAL
+            )
         else:
-            status = ScanStatus.WEAK
+            status = (
+                ScanStatus.WEAK
+            )
 
         reason = "; ".join(
             (
@@ -281,12 +372,17 @@ class MarketScanner:
         )
 
         if not reason:
-            reason = "No engine result"
+            reason = (
+                "No engine result"
+            )
 
         return ScanResult(
             ticker=snapshot.ticker,
             status=status,
-            score=round(score, 2),
+            score=round(
+                score,
+                2,
+            ),
             price=snapshot.price,
             change_percent=round(
                 snapshot.change_percent,

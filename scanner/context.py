@@ -11,6 +11,14 @@ class VolumeContext:
 
 
 @dataclass(frozen=True)
+class IndexContext:
+    market_trend: int
+    spy_above_vwap: bool
+    qqq_above_vwap: bool
+
+
+@dataclass(frozen=True)
 class MarketContext:
     volume: VolumeContext | None = None
+    index: IndexContext | None = None
     
