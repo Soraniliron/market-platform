@@ -4,8 +4,11 @@ from dataclasses import asdict
 from datetime import date, datetime, timezone
 from typing import Any
 
+from config.settings import (
+    MAX_DAILY_CANDIDATES,
+)
 from decision.decision_engine import DecisionEngine
-from logs.logger import logger
+from logs.logger import log_event
 from notifications.models import NotificationType
 from notifications.notification_service import (
     NotificationService,
@@ -23,8 +26,12 @@ class AutoScanJob:
         scanner: MarketScanner | None = None,
         decision_engine: DecisionEngine | None = None,
         signal_builder: SignalBuilder | None = None,
-        notification_service: NotificationService | None = None,
-        signal_guard: DuplicateSignalGuard | None = None,
+        notification_service: (
+            NotificationService | None
+        ) = None,
+        signal_guard: (
+            DuplicateSignalGuard | None
+        ) = None,
     ) -> None:
         self.scanner = (
             scanner
@@ -59,6 +66,13 @@ class AutoScanJob:
     ) -> dict[str, Any]:
         today = date.today()
 
+        log_event(
+            "AUTO_SCAN_STARTED",
+            message="Automatic HOME LIST scan started",
+            trading_date=today.isoformat(),
+            timeframe_minutes=timeframe_minutes,
+        )
+
         scan_results = (
             self.scanner.scan_home_list(
                 timeframe_minutes=timeframe_minutes,
@@ -68,11 +82,35 @@ class AutoScanJob:
             )
         )
 
+        log_event(
+            "AUTO_SCAN_RESULTS_READY",
+            message="Automatic scan results ready",
+            scanned_count=len(scan_results),
+            timeframe_minutes=timeframe_minutes,
+        )
+
         decision = (
             self.decision_engine.decide(
                 scan_results=scan_results,
-                limit=3,
+                limit=MAX_DAILY_CANDIDATES,
             )
+        )
+
+        log_event(
+            "AUTO_SCAN_DECISION_CREATED",
+            message="Automatic scan decision created",
+            decision_status=(
+                decision.decision_status.value
+            ),
+            candidates_count=(
+                decision.candidates_count
+            ),
+            top_ticker=(
+                decision.top_candidate.ticker
+                if decision.top_candidate
+                is not None
+                else None
+            ),
         )
 
         signal = self.signal_builder.build(
@@ -81,8 +119,13 @@ class AutoScanJob:
         )
 
         if signal is None:
-            logger.info(
-                "Auto scan completed with no signal"
+            log_event(
+                "AUTO_SCAN_NO_SIGNAL",
+                message=(
+                    "Automatic scan completed "
+                    "without signal"
+                ),
+                reason=decision.reason,
             )
 
             return {
@@ -103,9 +146,12 @@ class AutoScanJob:
         )
 
         if not guard_result.allowed:
-            logger.info(
-                "Duplicate signal blocked for %s",
-                signal.ticker,
+            log_event(
+                "DUPLICATE_SIGNAL_BLOCKED",
+                message="Duplicate signal blocked",
+                ticker=signal.ticker,
+                status=signal.status.value,
+                reason=guard_result.reason,
             )
 
             return {
@@ -137,10 +183,17 @@ class AutoScanJob:
             )
         )
 
-        logger.info(
-            "Auto scan completed for %s with status %s",
-            signal.ticker,
-            signal.status.value,
+        log_event(
+            "AUTO_SCAN_COMPLETED",
+            message="Automatic scan completed",
+            ticker=signal.ticker,
+            status=signal.status.value,
+            notification_status=(
+                notification_result.status.value
+            ),
+            attempts_count=(
+                notification_result.attempts_count
+            ),
         )
 
         return {
@@ -170,8 +223,13 @@ class AutoScanJob:
 
 
 def scheduled_test_job() -> None:
-    logger.info(
-        "Scheduled test job executed at %s",
-        datetime.now(timezone.utc).isoformat(),
+    executed_at = datetime.now(
+        timezone.utc
+    ).isoformat()
+
+    log_event(
+        "SCHEDULED_TEST_JOB_EXECUTED",
+        message="Scheduled test job executed",
+        executed_at=executed_at,
     )
     

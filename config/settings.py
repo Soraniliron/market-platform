@@ -36,6 +36,21 @@ REQUEST_TIMEOUT_SECONDS = int(
 )
 
 
+SCHEDULER_INTERVAL_SECONDS = int(
+    os.getenv(
+        "SCHEDULER_INTERVAL_SECONDS",
+        "30",
+    )
+)
+
+MAX_DAILY_CANDIDATES = int(
+    os.getenv(
+        "MAX_DAILY_CANDIDATES",
+        "3",
+    )
+)
+
+
 EMAIL_ENABLED = os.getenv(
     "EMAIL_ENABLED",
     "false",

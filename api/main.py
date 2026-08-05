@@ -1,12 +1,21 @@
 from fastapi import FastAPI
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.background import (
+    BackgroundScheduler,
+)
 
-from config.settings import APP_MODE
+from config.settings import (
+    APP_MODE,
+    SCHEDULER_INTERVAL_SECONDS,
+)
 from database.connection import get_connection
-from database.signal_repository import get_signals, save_signal
-from logs.logger import logger
+from database.signal_repository import (
+    get_signals,
+    save_signal,
+)
+from logs.logger import log_event
 from providers.market_provider import get_signal
 from scheduler.jobs import scheduled_test_job
+
 
 app = FastAPI()
 
@@ -14,28 +23,43 @@ job_scheduler = BackgroundScheduler()
 
 
 @app.on_event("startup")
-def start_scheduler():
+def start_scheduler() -> None:
     job_scheduler.add_job(
         scheduled_test_job,
         "interval",
-        seconds=30,
+        seconds=SCHEDULER_INTERVAL_SECONDS,
         id="scheduled_test_job",
         replace_existing=True,
     )
 
     job_scheduler.start()
-    logger.info("Scheduler started")
+
+    log_event(
+        "SCHEDULER_STARTED",
+        message="Scheduler started",
+        interval_seconds=(
+            SCHEDULER_INTERVAL_SECONDS
+        ),
+    )
 
 
 @app.on_event("shutdown")
-def stop_scheduler():
+def stop_scheduler() -> None:
     job_scheduler.shutdown()
-    logger.info("Scheduler stopped")
+
+    log_event(
+        "SCHEDULER_STOPPED",
+        message="Scheduler stopped",
+    )
 
 
 @app.get("/health")
-def health():
-    logger.info("Health endpoint called")
+def health() -> dict:
+    log_event(
+        "HEALTH_ENDPOINT_CALLED",
+        message="Health endpoint called",
+        app_mode=APP_MODE,
+    )
 
     return {
         "status": "ok",
@@ -44,8 +68,11 @@ def health():
 
 
 @app.get("/signal")
-def signal():
-    logger.info("Generating new signal")
+def signal() -> dict:
+    log_event(
+        "LEGACY_SIGNAL_REQUESTED",
+        message="Generating legacy signal",
+    )
 
     data = get_signal()
 
@@ -58,14 +85,22 @@ def signal():
         data["signal"],
     )
 
-    logger.info("Signal saved for %s", data["ticker"])
+    log_event(
+        "LEGACY_SIGNAL_SAVED",
+        message="Legacy signal saved",
+        ticker=data["ticker"],
+        signal=data["signal"],
+    )
 
     return data
 
 
 @app.get("/signals")
-def signals():
-    logger.info("Reading all signals")
+def signals() -> list[dict]:
+    log_event(
+        "SIGNALS_READ_REQUESTED",
+        message="Reading saved signals",
+    )
 
     rows = get_signals()
 
@@ -85,20 +120,31 @@ def signals():
 
 
 @app.get("/db-check")
-def db_check():
-    logger.info("Database health check")
+def db_check() -> dict:
+    log_event(
+        "DATABASE_HEALTH_CHECK_STARTED",
+        message="Database health check started",
+    )
 
     connection = get_connection()
     cursor = connection.cursor()
 
-    cursor.execute("SELECT 1;")
-    result = cursor.fetchone()
+    try:
+        cursor.execute("SELECT 1;")
+        result = cursor.fetchone()
 
-    cursor.close()
-    connection.close()
+        log_event(
+            "DATABASE_HEALTH_CHECK_PASSED",
+            message="Database health check passed",
+            result=result[0],
+        )
 
-    return {
-        "database": "ok",
-        "result": result[0],
-    }
-    
+        return {
+            "database": "ok",
+            "result": result[0],
+        }
+
+    finally:
+        cursor.close()
+        connection.close()
+        
