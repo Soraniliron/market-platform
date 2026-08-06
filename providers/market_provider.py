@@ -9,7 +9,11 @@ from importer.polygon_client import PolygonClient
 
 class MarketProvider:
     def __init__(self) -> None:
-        self.client = PolygonClient() if APP_MODE != "mock" else None
+        self.client = (
+            PolygonClient()
+            if APP_MODE != "mock"
+            else None
+        )
 
     def get_bars(
         self,
@@ -25,7 +29,9 @@ class MarketProvider:
             )
 
         if self.client is None:
-            raise RuntimeError("Market client is not initialized")
+            raise RuntimeError(
+                "Market client is not initialized"
+            )
 
         return self.client.get_minute_history(
             ticker=ticker,
@@ -51,9 +57,13 @@ class MarketProvider:
             ]
 
         if self.client is None:
-            raise RuntimeError("Market client is not initialized")
+            raise RuntimeError(
+                "Market client is not initialized"
+            )
 
-        return self.client.get_previous_close(ticker=ticker)
+        return self.client.get_previous_close(
+            ticker=ticker
+        )
 
     @staticmethod
     def _get_mock_bars(
@@ -63,7 +73,9 @@ class MarketProvider:
         return [
             {
                 "ticker": ticker.upper(),
-                "timeframe_minutes": timeframe_minutes,
+                "timeframe_minutes": (
+                    timeframe_minutes
+                ),
                 "o": 100.0,
                 "h": 101.0,
                 "l": 99.5,
@@ -74,19 +86,4 @@ class MarketProvider:
                 "n": 1_000,
             }
         ]
-
-
-def get_signal() -> dict[str, Any]:
-    if APP_MODE == "mock":
-        return {
-            "ticker": "META",
-            "entry_price": 100.5,
-            "stop_price": 98.0,
-            "tp1_price": 102.5,
-            "tp2_price": 105.0,
-            "signal": "BUY",
-        }
-
-    return {
-        "error": "Signal engine not connected yet"
-    }
+        

@@ -1,51 +1,76 @@
-from fastapi import FastAPI
+from __future__ import annotations
+
 from apscheduler.schedulers.background import (
     BackgroundScheduler,
 )
+from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 
 from config.settings import (
-    APP_MODE,
     SCHEDULER_INTERVAL_SECONDS,
 )
 from database.connection import get_connection
-from database.signal_repository import (
-    get_signals,
-    save_signal,
+from health.monitor import (
+    HealthCheckResult,
+    HealthMonitor,
 )
 from logs.logger import log_event
-from providers.market_provider import get_signal
-from scheduler.jobs import scheduled_test_job
 
 
-app = FastAPI()
+app = FastAPI(
+    title="IDB PRIME",
+    version="1.0.0",
+)
 
 job_scheduler = BackgroundScheduler()
 
 
-@app.on_event("startup")
-def start_scheduler() -> None:
-    job_scheduler.add_job(
-        scheduled_test_job,
-        "interval",
-        seconds=SCHEDULER_INTERVAL_SECONDS,
-        id="scheduled_test_job",
-        replace_existing=True,
+def scheduler_health_check() -> HealthCheckResult:
+    running = job_scheduler.running
+
+    return HealthCheckResult(
+        component="scheduler",
+        healthy=running,
+        status=(
+            "running"
+            if running
+            else "stopped"
+        ),
+        details={
+            "running": running,
+            "jobs_count": len(
+                job_scheduler.get_jobs()
+            ),
+            "interval_seconds": (
+                SCHEDULER_INTERVAL_SECONDS
+            ),
+        },
     )
 
-    job_scheduler.start()
+
+health_monitor = HealthMonitor(
+    scheduler_check=scheduler_health_check,
+)
+
+
+@app.on_event("startup")
+def start_scheduler() -> None:
+    if not job_scheduler.running:
+        job_scheduler.start()
 
     log_event(
         "SCHEDULER_STARTED",
         message="Scheduler started",
-        interval_seconds=(
-            SCHEDULER_INTERVAL_SECONDS
+        jobs_count=len(
+            job_scheduler.get_jobs()
         ),
     )
 
 
 @app.on_event("shutdown")
 def stop_scheduler() -> None:
-    job_scheduler.shutdown()
+    if job_scheduler.running:
+        job_scheduler.shutdown()
 
     log_event(
         "SCHEDULER_STOPPED",
@@ -54,69 +79,35 @@ def stop_scheduler() -> None:
 
 
 @app.get("/health")
-def health() -> dict:
+def health() -> JSONResponse:
     log_event(
-        "HEALTH_ENDPOINT_CALLED",
-        message="Health endpoint called",
-        app_mode=APP_MODE,
+        "HEALTH_CHECK_STARTED",
+        message="System health check started",
     )
 
-    return {
-        "status": "ok",
-        "mode": APP_MODE,
-    }
-
-
-@app.get("/signal")
-def signal() -> dict:
-    log_event(
-        "LEGACY_SIGNAL_REQUESTED",
-        message="Generating legacy signal",
-    )
-
-    data = get_signal()
-
-    save_signal(
-        data["ticker"],
-        data["entry_price"],
-        data["stop_price"],
-        data["tp1_price"],
-        data["tp2_price"],
-        data["signal"],
-    )
+    report = health_monitor.check_all()
+    payload = report.to_dict()
 
     log_event(
-        "LEGACY_SIGNAL_SAVED",
-        message="Legacy signal saved",
-        ticker=data["ticker"],
-        signal=data["signal"],
+        "HEALTH_CHECK_COMPLETED",
+        message="System health check completed",
+        healthy=report.healthy,
+        status=report.status,
+        checks_count=len(
+            report.checks
+        ),
     )
 
-    return data
-
-
-@app.get("/signals")
-def signals() -> list[dict]:
-    log_event(
-        "SIGNALS_READ_REQUESTED",
-        message="Reading saved signals",
+    status_code = (
+        200
+        if report.healthy
+        else 503
     )
 
-    rows = get_signals()
-
-    return [
-        {
-            "id": row[0],
-            "ticker": row[1],
-            "entry_price": row[2],
-            "stop_price": row[3],
-            "tp1_price": row[4],
-            "tp2_price": row[5],
-            "signal": row[6],
-            "created_at": str(row[7]),
-        }
-        for row in rows
-    ]
+    return JSONResponse(
+        status_code=status_code,
+        content=payload,
+    )
 
 
 @app.get("/db-check")

@@ -220,16 +220,4 @@ class AutoScanJob:
             signal_status,
             NotificationType.SYSTEM_ERROR,
         )
-
-
-def scheduled_test_job() -> None:
-    executed_at = datetime.now(
-        timezone.utc
-    ).isoformat()
-
-    log_event(
-        "SCHEDULED_TEST_JOB_EXECUTED",
-        message="Scheduled test job executed",
-        executed_at=executed_at,
-    )
-    
+        
