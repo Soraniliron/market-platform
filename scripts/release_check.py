@@ -7,7 +7,33 @@ import sys
 from pathlib import Path
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+PROJECT_ROOT = Path(
+    __file__
+).resolve().parent.parent
+
+
+PRODUCTION_DIRECTORIES = (
+    "api",
+    "config",
+    "database",
+    "decision",
+    "earnings",
+    "engines",
+    "execution",
+    "health",
+    "importer",
+    "integration",
+    "logs",
+    "metrics",
+    "notifications",
+    "providers",
+    "scanner",
+    "scheduler",
+    "scripts",
+    "signals",
+    "tracking",
+    "tests",
+)
 
 
 def run_command(
@@ -23,7 +49,9 @@ def run_command(
         "",
     )
 
-    project_root_text = str(PROJECT_ROOT)
+    project_root_text = str(
+        PROJECT_ROOT
+    )
 
     environment["PYTHONPATH"] = (
         project_root_text
@@ -43,48 +71,89 @@ def run_command(
     )
 
     if result.returncode != 0:
-        print(f"{title}: FAILED")
+        print(
+            f"{title}: FAILED"
+        )
         return False
 
-    print(f"{title}: PASSED")
+    print(
+        f"{title}: PASSED"
+    )
+    return True
+
+
+def check_project_structure() -> bool:
+    print(
+        "\n=== Project Structure Check ==="
+    )
+
+    missing = []
+
+    for directory_name in (
+        PRODUCTION_DIRECTORIES
+    ):
+        directory = (
+            PROJECT_ROOT
+            / directory_name
+        )
+
+        if not directory.exists():
+            missing.append(
+                directory_name
+            )
+
+    if missing:
+        for directory_name in missing:
+            print(
+                "Missing directory: "
+                f"{directory_name}"
+            )
+
+        print(
+            "Project Structure Check: FAILED"
+        )
+        return False
+
+    print(
+        "Project Structure Check: PASSED"
+    )
     return True
 
 
 def check_compilation() -> bool:
-    print("\n=== Python Compilation Check ===")
-
-    directories = [
-        PROJECT_ROOT / "api",
-        PROJECT_ROOT / "config",
-        PROJECT_ROOT / "database",
-        PROJECT_ROOT / "earnings",
-        PROJECT_ROOT / "engines",
-        PROJECT_ROOT / "importer",
-        PROJECT_ROOT / "providers",
-        PROJECT_ROOT / "scanner",
-        PROJECT_ROOT / "scheduler",
-        PROJECT_ROOT / "scripts",
-        PROJECT_ROOT / "tests",
-    ]
+    print(
+        "\n=== Python Compilation Check ==="
+    )
 
     success = True
 
-    for directory in directories:
+    for directory_name in (
+        PRODUCTION_DIRECTORIES
+    ):
+        directory = (
+            PROJECT_ROOT
+            / directory_name
+        )
+
         if not directory.exists():
             print(
-                f"Missing directory: {directory}"
+                f"Missing directory: "
+                f"{directory}"
             )
             success = False
             continue
 
-        compiled = compileall.compile_dir(
-            str(directory),
-            quiet=1,
+        compiled = (
+            compileall.compile_dir(
+                str(directory),
+                quiet=1,
+            )
         )
 
         if not compiled:
             print(
-                f"Compilation failed: {directory}"
+                "Compilation failed: "
+                f"{directory}"
             )
             success = False
 
@@ -101,7 +170,9 @@ def check_compilation() -> bool:
 
 
 def check_core_imports() -> bool:
-    print("\n=== Core Import Check ===")
+    print(
+        "\n=== Core Import Check ==="
+    )
 
     if str(PROJECT_ROOT) not in sys.path:
         sys.path.insert(
@@ -110,64 +181,108 @@ def check_core_imports() -> bool:
         )
 
     try:
-        from earnings.audit_engine import (
-            create_audit_record,
+        from decision.decision_engine import (
+            DecisionEngine,
         )
-        from earnings.backtest_engine import (
-            run_backtest,
+        from decision.ranking_engine import (
+            RankingEngine,
         )
-        from earnings.earnings_engine import (
-            analyze_earnings_cycles,
-        )
-        from earnings.error_engine import (
-            execute_safely,
-        )
-        from earnings.replay_engine import (
-            replay_audit_record,
-        )
-        from earnings.report_engine import (
-            build_report,
-        )
-        from earnings.validation_engine import (
-            validate_analysis_input,
-        )
-        from engines.base_engine import (
-            BaseEngine,
-            EngineResult,
+        from engines.chart_quality_engine import (
+            ChartQualityEngine,
         )
         from engines.gap_engine import (
             GapEngine,
         )
+        from engines.index_engine import (
+            IndexEngine,
+        )
         from engines.volume_engine import (
             VolumeEngine,
+        )
+        from engines.vwap_engine import (
+            VWAPEngine,
+        )
+        from execution.entry_engine import (
+            EntryEngine,
+        )
+        from execution.invalidation_engine import (
+            InvalidationEngine,
+        )
+        from execution.overshoot_engine import (
+            OvershootEngine,
+        )
+        from execution.reassessment_engine import (
+            ReassessmentEngine,
+        )
+        from execution.risk_engine import (
+            RiskEngine,
+        )
+        from health.monitor import (
+            HealthMonitor,
+        )
+        from integration.pipeline import (
+            ManualTradingPipeline,
+        )
+        from metrics.collector import (
+            MetricsCollector,
+        )
+        from notifications.notification_service import (
+            NotificationService,
         )
         from providers.market_provider import (
             MarketProvider,
         )
-        from scanner.context import (
-            MarketContext,
-            VolumeContext,
-        )
         from scanner.scanner_engine import (
             MarketScanner,
         )
+        from scheduler.jobs import (
+            AutoScanJob,
+        )
+        from scheduler.report_generator import (
+            ReportGenerator,
+        )
+        from scheduler.signal_guard import (
+            DuplicateSignalGuard,
+        )
+        from signals.signal_builder import (
+            SignalBuilder,
+        )
+        from tracking.audit_engine import (
+            AuditEngine,
+        )
+        from tracking.performance_engine import (
+            PerformanceEngine,
+        )
+        from tracking.replay_engine import (
+            ReplayEngine,
+        )
 
         required_objects = [
-            create_audit_record,
-            run_backtest,
-            analyze_earnings_cycles,
-            execute_safely,
-            replay_audit_record,
-            build_report,
-            validate_analysis_input,
-            BaseEngine,
-            EngineResult,
+            DecisionEngine,
+            RankingEngine,
+            ChartQualityEngine,
             GapEngine,
+            IndexEngine,
             VolumeEngine,
+            VWAPEngine,
+            EntryEngine,
+            InvalidationEngine,
+            OvershootEngine,
+            ReassessmentEngine,
+            RiskEngine,
+            HealthMonitor,
+            ManualTradingPipeline,
+            MetricsCollector,
+            NotificationService,
             MarketProvider,
-            MarketContext,
-            VolumeContext,
             MarketScanner,
+            AutoScanJob,
+            ReportGenerator,
+            DuplicateSignalGuard,
+            SignalBuilder,
+            AuditEngine,
+            PerformanceEngine,
+            ReplayEngine,
         ]
 
         if any(
@@ -175,25 +290,104 @@ def check_core_imports() -> bool:
             for item in required_objects
         ):
             raise ImportError(
-                "A required object is unavailable"
+                "A required core object "
+                "is unavailable"
             )
 
-    except ImportError as error:
+    except (
+        ImportError,
+        AttributeError,
+    ) as error:
         print(
-            f"Core Import Check: FAILED: {error}"
+            "Core Import Check: FAILED: "
+            f"{error}"
         )
         return False
 
-    print("Core Import Check: PASSED")
+    print(
+        "Core Import Check: PASSED"
+    )
+    return True
+
+
+def check_configuration() -> bool:
+    print(
+        "\n=== Configuration Check ==="
+    )
+
+    try:
+        from config.settings import (
+            APP_MODE,
+            LOG_LEVEL,
+            MAX_DAILY_CANDIDATES,
+            REQUEST_TIMEOUT_SECONDS,
+            SCHEDULER_INTERVAL_SECONDS,
+        )
+
+        if APP_MODE not in {
+            "mock",
+            "live",
+        }:
+            raise ValueError(
+                "APP_MODE must be "
+                "'mock' or 'live'"
+            )
+
+        if not LOG_LEVEL:
+            raise ValueError(
+                "LOG_LEVEL must not be empty"
+            )
+
+        if (
+            REQUEST_TIMEOUT_SECONDS
+            < 1
+        ):
+            raise ValueError(
+                "REQUEST_TIMEOUT_SECONDS "
+                "must be at least one"
+            )
+
+        if (
+            SCHEDULER_INTERVAL_SECONDS
+            < 1
+        ):
+            raise ValueError(
+                "SCHEDULER_INTERVAL_SECONDS "
+                "must be at least one"
+            )
+
+        if (
+            MAX_DAILY_CANDIDATES
+            < 1
+        ):
+            raise ValueError(
+                "MAX_DAILY_CANDIDATES "
+                "must be at least one"
+            )
+
+    except Exception as error:
+        print(
+            "Configuration Check: FAILED: "
+            f"{error}"
+        )
+        return False
+
+    print(
+        "Configuration Check: PASSED"
+    )
     return True
 
 
 def main() -> int:
-    print("IDB PRIME - RELEASE CHECK")
+    print(
+        "IDB PRIME - RELEASE CHECK"
+    )
 
     checks = [
+        check_project_structure(),
         check_compilation(),
         check_core_imports(),
+        check_configuration(),
         run_command(
             [
                 sys.executable,
@@ -218,5 +412,7 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(
+        main()
+    )
     
